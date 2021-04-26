@@ -1,12 +1,77 @@
 import pygame as pg
 import sys
 from os import path
-from random import choice
-from settings import *
-from sprites import *
-from tilemap import *
-import time
+from random import uniform, choice, random
+import pytmx
+vec = pg.math.Vector2
+# used for the bobbing of the items
+import pytweening as tween
 
+#########################################################
+vec = pg.math.Vector2
+
+# define some colors (R, G, B)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+DARKGREY = (40, 40, 40)
+LIGHTGREY = (100, 100, 100)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+BROWN = (106, 55, 5)
+CYAN = (0, 255, 255)
+
+# game settings
+WIDTH = 1024  # 16 * 64 or 32 * 32 or 64 * 16
+HEIGHT = 768  # 16 * 48 or 32 * 24 or 64 * 12
+FPS = 60
+TITLE = "Tilemap Demo"
+BGCOLOR = BROWN
+
+TILESIZE = 64
+GRIDWIDTH = WIDTH / TILESIZE
+RIDHEIGHT = HEIGHT / TILESIZE
+
+# Wall settings
+WALL_IMG = 'tileGreen_39.png'
+
+# Car settings
+CAR_HEALTH = 100
+CAR_SPEED = 280
+CAR_ROT_SPEED = 200
+CAR_IMG = 'car.png'
+CAR_HIT_RECT = pg.Rect(0, 0, 35, 35)
+BARREL_OFFSET = vec(30, 10)
+
+# Gun settings
+BULLET_IMG = 'bullet.png'
+BULLET_SPEED = 500
+BULLET_LIFETIME = 1000
+BULLET_RATE = 150
+KICKBACK = 200
+GUN_SPREAD = 5
+BULLET_DAMAGE = 10
+
+# Mob settings
+MOB_IMG = 'zombie.png'
+MOB_SPEEDS = 100
+MOB_HIT_RECT = pg.Rect(0, 0, 30, 30)
+MOB_HEALTH = 100
+MOB_DAMAGE = 10
+MOB_KNOCKBACK = 20
+AVOID_RADIUS = 50
+
+#Item list
+ITEM_IMAGES = {'destination': 'destinationpoint.png', 'pass1': 'kenny.png', 'pass2': 'kenny.png', 'pass3': 'kenny.png', 'pass4' : "kenny.png"}
+BOB_RANGE = 15
+BOB_SPEED = 0.4
+
+#Night Mode
+NIGHT_COLOR = (20,20,20)
+LIGHT_RADIUS = (500,500)
+LIGHT_MASK = 'light.png'
+
+############################################################################
 
 def draw_car_health(surf, x, y, pct):
     if pct < 0:
@@ -26,14 +91,317 @@ def draw_car_health(surf, x, y, pct):
     pg.draw.rect(surf, WHITE, outline_rect, 2)
 
 
+def collide_with_walls(sprite, group, dir):
+    #using the x and y cordinates at the center of each sprite the code detects if they collide or overlap
+    if dir == 'x':
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+            if hits[0].rect.centerx > sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
+            if hits[0].rect.centerx < sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
+            sprite.vel.x = 0
+            sprite.hit_rect.centerx = sprite.pos.x
+    if dir == 'y':
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+            if hits[0].rect.centery > sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.top - sprite.hit_rect.height / 2
+            if hits[0].rect.centery < sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.height / 2
+            sprite.vel.y = 0
+            sprite.hit_rect.centery = sprite.pos.y
+
+
+class Car(pg.sprite.Sprite):
+    def __init__(self, game, x, y):
+        # adds the sprite to the all sprites group
+        self.groups = game.all_sprites
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        #calls the car image
+        self.image = game.car_img
+        #creates rectangle variable that is placed over the player
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        #from settings it gets the dimensions for the rectangle to be drawn
+        self.hit_rect = CAR_HIT_RECT
+        self.hit_rect.center = self.rect.center
+        #with help from a tutorial we imported vectors to make the player movment and position easier to calulate and work with
+        self.vel = vec(0, 0)
+        self.pos = vec(x, y)
+        #rotation of the player
+        self.rot = 0
+        self.last_shot = 0
+        self.health = CAR_HEALTH
+
+    def get_keys(self):
+        self.rot_speed = 0
+        self.vel = vec(0, 0)
+        keys = pg.key.get_pressed()
+        #establishing the key press and assigning it to a rotation of the player (ex. if left arrow key is pushed rotate the player left)
+        if keys[pg.K_LEFT] or keys[pg.K_a]:
+            self.rot_speed = CAR_ROT_SPEED
+        if keys[pg.K_RIGHT] or keys[pg.K_d]:
+            self.rot_speed = -CAR_ROT_SPEED
+        if keys[pg.K_UP] or keys[pg.K_w]:
+            self.vel = vec(CAR_SPEED, 0).rotate(-self.rot)
+        if keys[pg.K_DOWN] or keys[pg.K_s]:
+            self.vel = vec(-CAR_SPEED / 2, 0).rotate(-self.rot)
+        if keys[pg.K_SPACE]:
+            #assiging variabel now to make sure bullets dont loop endlessly
+            now = pg.time.get_ticks()
+            if now - self.last_shot > BULLET_RATE:
+                self.last_shot = now
+                #using the bullet settings preset in settings the bullet shoots and gives the player kickback
+                dir = vec(1, 0).rotate(-self.rot)
+                pos = self.pos + BARREL_OFFSET.rotate(-self.rot)
+                Bullet(self.game, pos, dir)
+                self.vel = vec(-KICKBACK, 0).rotate(-self.rot)
+
+
+    def update(self):
+        #update the player information and variables set in "__init__'
+        self.get_keys()
+        self.rot = (self.rot + self.rot_speed * self.game.dt) % 360
+        self.image = pg.transform.rotate(self.game.car_img, self.rot)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
+        self.pos += self.vel * self.game.dt
+        self.hit_rect.centerx = self.pos.x
+        collide_with_walls(self, self.game.walls, 'x')
+        self.hit_rect.centery = self.pos.y
+        collide_with_walls(self, self.game.walls, 'y')
+        self.rect.center = self.hit_rect.center
+
+
+class Mob(pg.sprite.Sprite):
+    def __init__(self, game, x, y):
+        #assiging he mob sprite to the all sprites group
+        self.groups = game.all_sprites, game.mobs
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        #settings the mob image
+        self.image = game.mob_img
+        #establishing the rectange variabes
+        self.rect = self.image.get_rect()
+        #setting the mobs rectange dimensions
+        self.hit_rect = MOB_HIT_RECT.copy()
+        self.hit_rect.center = self.rect.center
+        #using vectors to set the position speed and acceleration of the mob
+        self.pos = vec(x, y)
+        self.vel = vec(0, 0)
+        self.acc = vec(0, 0)
+        self.rect.center = self.pos
+        self.rot = 0
+        #calling the mobs health and speed varibale set in settings
+        self.health = MOB_HEALTH
+        self.speed = MOB_SPEEDS
+
+    def avoid_mobs(self):
+        #using a tutorial we inserted this code to make sure the mobs dont all overlap each other while chasing the car and make the movemnt more realistic
+        for mob in self.game.mobs:
+            if mob != self:
+                dist = self.pos - mob.pos
+                if 0 < dist.length() < AVOID_RADIUS:
+                    self.acc += dist.normalize()
+
+    def update(self):
+        #assigning informatin to the varibales initialized in "__init__"
+        self.rot = (self.game.car.pos - self.pos).angle_to(vec(1, 0))
+        self.image = pg.transform.rotate(self.game.mob_img, self.rot)
+        # self.rect = self.image.get_rect()
+        self.rect.center = self.pos
+        self.acc = vec(1, 0).rotate(-self.rot)
+        self.avoid_mobs()
+        self.acc.scale_to_length(self.speed)
+        self.acc += self.vel * -1
+        self.vel += self.acc * self.game.dt
+        self.pos += self.vel * self.game.dt + 0.5 * self.acc * self.game.dt ** 2
+        self.hit_rect.centerx = self.pos.x
+        collide_with_walls(self, self.game.walls, 'x')
+        self.hit_rect.centery = self.pos.y
+        collide_with_walls(self, self.game.walls, 'y')
+        self.rect.center = self.hit_rect.center
+        if self.health <= 0:
+            self.kill()
+
+
+
+    def draw_health(self):
+        #settings the colours, size and position of the health bar above the mob"
+        #series of if statments that make the colour of the health bar change as the mob looses health
+        if self.health > 60:
+            col = GREEN
+        elif self.health > 30:
+            col = YELLOW
+        else:
+            col = RED
+        width = int(self.rect.width * self.health / MOB_HEALTH)
+        self.health_bar = pg.Rect(0, 0, width, 7)
+        if self.health < MOB_HEALTH:
+            pg.draw.rect(self.image, col, self.health_bar)
+
+class Bullet(pg.sprite.Sprite):
+    def __init__(self, game, pos, dir):
+        #adding bullets to the all sprites group
+        self.groups = game.all_sprites, game.bullets
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        #initializing the bullet image
+        self.image = game.bullet_img
+        #setting up the rectagle around the bullet
+        self.rect = self.image.get_rect()
+        self.hit_rect = self.rect
+        #using vectors to set the position
+        self.pos = vec(pos)
+        self.rect.center = pos
+        #setting the spped of the bullets and the using the uniform fuction to make sure they have varity in bullet trajectory
+        spread = uniform(-GUN_SPREAD, GUN_SPREAD)
+        self.vel = dir.rotate(spread) * BULLET_SPEED
+        self.spawn_time = pg.time.get_ticks()
+
+    def update(self):
+        self.pos += self.vel * self.game.dt
+        self.rect.center = self.pos
+        #if the bullet collides with a wall it should disappar
+        if pg.sprite.spritecollideany(self, self.game.walls):
+            self.kill()
+        #after a certain distance the bullets should disappear so they don't go on forever
+        if pg.time.get_ticks() - self.spawn_time > BULLET_LIFETIME:
+            self.kill()
+
+class Wall(pg.sprite.Sprite):
+    def __init__(self, game, x, y):
+        #setting up inital variables for the wall
+        self.groups = game.all_sprites, game.walls
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = game.wall_img
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE
+
+class Obstacle(pg.sprite.Sprite):
+    #updating these variables to make them Obstacles that cannot be passed through
+    def __init__(self, game, x, y, w, h):
+        self.groups = game.walls
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        self.rect = pg.Rect(x, y, w, h)
+        self.hit_rect = self.rect
+        self.x = x
+        self.y = y
+        self.rect.x = x
+        self.rect.y = y
+
+
+#the item class consists of the passengers and the destination point complied in a last
+#the code between the destination and passenger works the same  just with different images
+class Item(pg.sprite.Sprite):
+    def __init__(self, game, pos, type):
+        #adding the item to the all sprites class
+        self.groups = game.all_sprites, game.items
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        #assigning the image variable with the list set in settings
+        self.image = game.item_images[type]
+        #initalizing the rectangle allowing it to be picked up when collided with
+        self.rect = self.image.get_rect()
+        #identifying the type of item in the list
+        self.type = type
+        self.pos = pos
+        self.rect.center = pos
+        #tween is a module which allows a sprite to smoothly bob up and down
+        self.tween = tween.easeInOutSine
+        self.step = 0
+        self.dir = 1
+
+    def update(self):
+        # bobbing motion
+        offset = BOB_RANGE * (self.tween(self.step / BOB_RANGE) - 0.5)
+        self.rect.centery = self.pos.y + offset * self.dir
+        self.step += BOB_SPEED
+        if self.step > BOB_RANGE:
+            self.step = 0
+            self.dir *= -1
+
+
+##############################################################################
+
+def collide_hit_rect(one, two):
+    return one.hit_rect.colliderect(two.rect)
+
+class Map:
+    def __init__(self, filename):
+        self.data = []
+        with open(filename, 'rt') as f:
+            for line in f:
+                self.data.append(line.strip())
+
+        self.tilewidth = len(self.data[0])
+        self.tileheight = len(self.data)
+        self.width = self.tilewidth * TILESIZE
+        self.height = self.tileheight * TILESIZE
+
+class TiledMap:
+    def __init__(self, filename):
+        tm = pytmx.load_pygame(filename, pixelalpha=True)
+        self.width = tm.width * tm.tilewidth
+        self.height = tm.height * tm.tileheight
+        self.tmxdata = tm
+
+    def render(self, surface):
+        ti = self.tmxdata.get_tile_image_by_gid
+        for layer in self.tmxdata.visible_layers:
+            if isinstance(layer, pytmx.TiledTileLayer):
+                for x, y, gid, in layer:
+                    tile = ti(gid)
+                    if tile:
+                        surface.blit(tile, (x * self.tmxdata.tilewidth,
+                                            y * self.tmxdata.tileheight))
+
+    def make_map(self):
+        temp_surface = pg.Surface((self.width, self.height))
+        self.render(temp_surface)
+        return temp_surface
+
+class Camera:
+    def __init__(self, width, height):
+        self.camera = pg.Rect(0, 0, width, height)
+        self.width = width
+        self.height = height
+
+    def apply(self, entity):
+        return entity.rect.move(self.camera.topleft)
+
+    def apply_rect(self, rect):
+        return rect.move(self.camera.topleft)
+
+    def update(self, target):
+        x = -target.rect.centerx + int(WIDTH / 2)
+        y = -target.rect.centery + int(HEIGHT / 2)
+
+        # limit scrolling to map size
+        x = min(0, x)  # left
+        y = min(0, y)  # top
+        x = max(-(self.width - WIDTH), x)  # right
+        y = max(-(self.height - HEIGHT), y)  # bottom
+        self.camera = pg.Rect(x, y, self.width, self.height)
+
+
+#########################################################################################
+
 class Game:
+
     def __init__(self):
         pg.init()
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption(TITLE)
         self.clock = pg.time.Clock()
         self.load_data()
-
     #series of if statments that we can use to place text on certain portian of the screen signified by 'nw' = north west or 'e' = east
     def draw_text(self, text, font_name, size, color, x, y, align="nw"):
         font = pg.font.Font(font_name, size)
@@ -66,6 +434,8 @@ class Game:
         self.map_folder = path.join(game_folder, 'maps')
         self.title_font = path.join(img_folder, 'JosefinSans-Bold.TTF')
         self.title_font2 = path.join(img_folder, 'COMICATE.TTF')
+        self.map = TiledMap(path.join(self.map_folder, 'level1.tmx'))
+        self.map2 = TiledMap(path.join(self.map_folder, 'level2.tmx'))
         self.hud_font = path.join(img_folder,'JosefinSans-Bold.TTF')
         self.dim_screen = pg.Surface(self.screen.get_size()).convert_alpha()
         self.dim_screen.fill((0,0,0,180))
@@ -86,6 +456,8 @@ class Game:
         self.light_mask = pg.transform.scale(self.light_mask, LIGHT_RADIUS)
         self.light_rect = self.light_mask.get_rect()
 
+
+
     def new(self):
         # initialize all variables and do all the setup for a new game
         self.all_sprites = pg.sprite.Group()
@@ -93,28 +465,44 @@ class Game:
         self.mobs = pg.sprite.Group()
         self.bullets = pg.sprite.Group()
         self.items = pg.sprite.Group()
+        level = 1
         #import the levels from application 'Tiled'
-        self.map = TiledMap (path.join(self.map_folder, 'level2.tmx'))
-        self.map_img = self.map.make_map()
-        self.map.rect = self.map_img.get_rect()
-        # identifys all the objects in the "Tiled' map by name and assigns varibales to them like wall where the player can't pass through
-        for tile_object in self.map.tmxdata.objects:
-            obj_center = vec(tile_object.x + tile_object.width / 2, tile_object.y + tile_object.height / 2)
-            if tile_object.name == 'player':
-                self.car = Car(self, obj_center.x, obj_center.y)
-            if tile_object.name == 'wall':
-                Obstacle(self, tile_object.x, tile_object.y, tile_object.width, tile_object.height)
-            if tile_object.name in ['destination', 'pass1', 'pass2', 'pass3', 'pass4']:
-                Item(self, obj_center, tile_object.name)
-            if tile_object.name == 'mob':
-                Mob(self, obj_center.x, obj_center.y)
+        if level == 1:
+            self.map_img = self.map.make_map()
+            self.map.rect = self.map_img.get_rect()
+            for tile_object in self.map.tmxdata.objects:
+                obj_center = vec(tile_object.x + tile_object.width / 2, tile_object.y + tile_object.height / 2)
+                if tile_object.name == 'player':
+                    self.car = Car(self, obj_center.x, obj_center.y)
+                if tile_object.name == 'wall':
+                    Obstacle(self, tile_object.x, tile_object.y, tile_object.width, tile_object.height)
+                if tile_object.name in ['destination', 'pass1', 'pass2', 'pass3', 'pass4']:
+                    Item(self, obj_center, tile_object.name)
+                if tile_object.name == 'mob':
+                    Mob(self, obj_center.x, obj_center.y)
+            self.camera = Camera(self.map.width, self.map.height)
+        elif level == 2:
+            self.map2_img = self.map2.make_map()
+            self.map2.rect = self.map2_img.get_rect()
+            for tile_object in self.map2.tmxdata.objects:
+                obj_center = vec(tile_object.x + tile_object.width / 2, tile_object.y + tile_object.height / 2)
+                if tile_object.name == 'player':
+                    self.car = Car(self, obj_center.x, obj_center.y)
+                if tile_object.name == 'wall':
+                    Obstacle(self, tile_object.x, tile_object.y, tile_object.width, tile_object.height)
+                if tile_object.name in ['destination', 'pass1', 'pass2', 'pass3', 'pass4']:
+                    Item(self, obj_center, tile_object.name)
+                if tile_object.name == 'mob':
+                    Mob(self, obj_center.x, obj_center.y)
+            self.camera = Camera(self.map2.width, self.map2.height)
 
-        self.camera = Camera(self.map.width, self.map.height)
+
         # setting variables as False to be triggered to True when a certain button is pressed
         self.paused = False
         self.night = False
         self.pickup = False
         self.over = False
+
 
 
 
@@ -142,7 +530,6 @@ class Game:
         #game over screen when the length of passengers equels zero including the destination
         if len(self.items) == 0:
             self.playing = False
-            level +=1
         #mob hits player
         hits = pg.sprite.spritecollide(self.car, self.mobs, False, collide_hit_rect)
         for hit in hits:
@@ -174,8 +561,6 @@ class Game:
                 hit.kill()
             self.pickup = False
 
-
-
     def draw_grid(self):
         # draws the game grid used to develop the map
         for x in range(0, WIDTH, TILESIZE):
@@ -194,7 +579,11 @@ class Game:
         #sets the game caption to 'Tuber'
         pg.display.set_caption("Tuber")
         # self.screen.fill(BGCOLOR)
-        self.screen.blit(self.map_img, self.camera.apply(self.map))
+        level = 1
+        if level == 1:
+            self.screen.blit(self.map_img, self.camera.apply(self.map))
+        elif level == 2:
+            self.screen.blit(self.map2_img, self.camera.apply(self.map2))
         # self.draw_grid()
         for sprite in self.all_sprites:
             if isinstance(sprite, Mob):
@@ -286,8 +675,6 @@ class Game:
                 if event.type == pg.KEYUP:
                      waiting = False
 
-
-# create the game object
 g = Game()
 g.show_start_screen()
 while True:
