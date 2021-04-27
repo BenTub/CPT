@@ -38,7 +38,8 @@ WALL_IMG = 'tileGreen_39.png'
 # Car settings
 CAR_HEALTH = 100
 CAR_SPEED = 280
-CAR_SPEED2 = 400
+CAR_SPEED2 = 330
+CAR_SPEED3 = 380
 CAR_ROT_SPEED = 200
 CAR_IMG = 'car.png'
 CAR_HIT_RECT = pg.Rect(0, 0, 35, 35)
@@ -51,7 +52,8 @@ BULLET_LIFETIME = 1000
 BULLET_RATE = 150
 KICKBACK = 200
 GUN_SPREAD = 5
-BULLET_DAMAGE = 10
+BULLET_DAMAGE1 = 10
+BULLET_DAMAGE2 = 30
 
 MINIMAP_IMG = 'Level1Minimap.png'
 MINIMAP_IMG2 = 'Level2Minimap.png'
@@ -61,9 +63,12 @@ MINIMAP_IMG3 = 'Level3Minimap.png'
 MOB_IMG = 'zombie.png'
 MOB_SPEEDS = 100
 MOB_SPEEDS2 = 150
+MOB_SPEEDS3 = 175
 MOB_HIT_RECT = pg.Rect(0, 0, 30, 30)
-MOB_HEALTH = 120
-MOB_DAMAGE = 10
+MOB_HEALTH1 = 100
+MOB_HEALTH2 = 120
+MOB_HEALTH3 = 150
+MOB_DAMAGE = 5
 MOB_KNOCKBACK = 20
 AVOID_RADIUS = 50
 
@@ -157,14 +162,14 @@ class Car(pg.sprite.Sprite):
             elif level == 2:
                 self.vel = vec(CAR_SPEED2, 0).rotate(-self.rot)
             elif level == 3:
-                self.vel = vec(CAR_SPEED2, 0).rotate(-self.rot)
+                self.vel = vec(CAR_SPEED3, 0).rotate(-self.rot)
         if keys[pg.K_DOWN] or keys[pg.K_s]:
             if level == 1:
                 self.vel = vec(-CAR_SPEED / 2, 0).rotate(-self.rot)
             elif level == 2:
                 self.vel = vec(-CAR_SPEED2 / 2, 0).rotate(-self.rot)
             elif level == 3:
-                self.vel = vec(-CAR_SPEED2 / 2, 0).rotate(-self.rot)
+                self.vel = vec(-CAR_SPEED3 / 2, 0).rotate(-self.rot)
         if keys[pg.K_SPACE]:
             #assiging variabel now to make sure bullets dont loop endlessly
             now = pg.time.get_ticks()
@@ -212,14 +217,16 @@ class Mob(pg.sprite.Sprite):
         self.rect.center = self.pos
         self.rot = 0
         #calling the mobs health and speed varibale set in settings
-        self.health = MOB_HEALTH
         global level
         if level == 1:
+            self.health = MOB_HEALTH1
             self.speed = MOB_SPEEDS
         elif level == 2:
+            self.health = MOB_HEALTH2
             self.speed = MOB_SPEEDS2
         elif level == 3:
-            self.speed = MOB_SPEEDS2
+            self.health = MOB_HEALTH3
+            self.speed = MOB_SPEEDS3
 
 
 
@@ -256,16 +263,23 @@ class Mob(pg.sprite.Sprite):
     def draw_health(self):
         #settings the colours, size and position of the health bar above the mob"
         #series of if statments that make the colour of the health bar change as the mob looses health
+        global level
         if self.health > 60:
             col = GREEN
         elif self.health > 30:
             col = YELLOW
         else:
             col = RED
-        width = int(self.rect.width * self.health / MOB_HEALTH)
-        self.health_bar = pg.Rect(0, 0, width, 7)
-        if self.health < MOB_HEALTH:
-            pg.draw.rect(self.image, col, self.health_bar)
+        if level == 3:
+            width = int(self.rect.width * self.health / MOB_HEALTH2)
+            self.health_bar = pg.Rect(0, 0, width, 7)
+            if self.health < MOB_HEALTH2 :
+                pg.draw.rect(self.image, col, self.health_bar)
+        else:
+            width = int(self.rect.width * self.health / MOB_HEALTH1)
+            self.health_bar = pg.Rect(0, 0, width, 7)
+            if self.health < MOB_HEALTH1:
+                pg.draw.rect(self.image, col, self.health_bar)
 
 class Bullet(pg.sprite.Sprite):
     def __init__(self, game, pos, dir):
@@ -418,7 +432,7 @@ class Camera:
 
 
 #########################################################################################
-level = 3
+level = 2
 class Game:
 
     def __init__(self):
@@ -549,7 +563,6 @@ class Game:
 
 
 
-
     def run(self):
         # game loop - set self.playing = False to end the game
         self.playing = True
@@ -571,6 +584,7 @@ class Game:
         #import all the sprites from the sprites folder
         self.all_sprites.update()
         self.camera.update(self.car)
+        global level
         #game over screen when the length of passengers equels zero including the destination
         if len(self.items) == 0:
             self.playing = False
@@ -592,7 +606,10 @@ class Game:
         hits = pg.sprite.groupcollide(self.mobs, self.bullets, False, True)
         for hit in hits:
             #subtracts the bullet damage from the zombies
-            hit.health -= BULLET_DAMAGE
+            if level == 3:
+                hit.health -= BULLET_DAMAGE2
+            else:
+                hit.health -= BULLET_DAMAGE1
             hit.vel = vec(0, 0)
 
             pg.display.flip()
@@ -714,8 +731,12 @@ class Game:
                 self.draw_text('Press a key to start level {}'.format(level + 1), self.title_font, 55, WHITE, WIDTH / 2, HEIGHT * 1.5 / 4, align ='center')
                 if level ==1:
                     self.draw_text('LEVEL 2:', self.title_font, 60, WHITE, WIDTH / 40 ,HEIGHT * 3.2 / 4, align='w')
-                    self.draw_text('++10 Zombies  ++Zombie Health  ++Zombie Speed', self.title_font, 40, RED, WIDTH / 2, HEIGHT * 3.5 / 4, align='center')
+                    self.draw_text('++5 Zombies  ++Zombie Health  ++Zombie Speed', self.title_font, 40, RED, WIDTH / 2, HEIGHT * 3.5 / 4, align='center')
                     self.draw_text('++2 Passengers ++Car speed', self.title_font, 40, GREEN, WIDTH / 2, HEIGHT * 3.8 / 4, align='center')
+                elif level ==2:
+                    self.draw_text('LEVEL 3:', self.title_font, 60, WHITE, WIDTH / 40 ,HEIGHT * 3.2 / 4, align='w')
+                    self.draw_text('++5 Zombies  ++Zombie Health  ++Zombie Speed', self.title_font, 40, RED, WIDTH / 2, HEIGHT * 3.5 / 4, align='center')
+                    self.draw_text('++2 Passengers ++Car speed ++Bullet Damage', self.title_font, 40, GREEN, WIDTH / 2, HEIGHT * 3.8 / 4, align='center')
                 pg.display.flip()
                 'call wait for key function'
                 self.wait_for_key2()
