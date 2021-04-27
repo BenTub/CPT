@@ -38,6 +38,7 @@ WALL_IMG = 'tileGreen_39.png'
 # Car settings
 CAR_HEALTH = 100
 CAR_SPEED = 280
+CAR_SPEED2 = 400
 CAR_ROT_SPEED = 200
 CAR_IMG = 'car.png'
 CAR_HIT_RECT = pg.Rect(0, 0, 35, 35)
@@ -52,17 +53,22 @@ KICKBACK = 200
 GUN_SPREAD = 5
 BULLET_DAMAGE = 10
 
+MINIMAP_IMG = 'Level1Minimap.png'
+MINIMAP_IMG2 = 'Level2Minimap.png'
+MINIMAP_IMG3 = 'Level3Minimap.png'
+
 # Mob settings
 MOB_IMG = 'zombie.png'
 MOB_SPEEDS = 100
+MOB_SPEEDS2 = 150
 MOB_HIT_RECT = pg.Rect(0, 0, 30, 30)
-MOB_HEALTH = 100
+MOB_HEALTH = 120
 MOB_DAMAGE = 10
 MOB_KNOCKBACK = 20
 AVOID_RADIUS = 50
 
 #Item list
-ITEM_IMAGES = {'destination': 'destinationpoint.png', 'pass1': 'kenny.png', 'pass2': 'kenny.png', 'pass3': 'kenny.png', 'pass4' : "kenny.png"}
+ITEM_IMAGES = {'destination': 'destinationpoint.png', 'pass1': 'kenny.png', 'pass2': 'kenny.png', 'pass3': 'kenny.png', 'pass4' : "kenny.png", 'pass5' : "kenny.png", 'pass6' : "kenny.png"}
 BOB_RANGE = 15
 BOB_SPEED = 0.4
 
@@ -138,6 +144,7 @@ class Car(pg.sprite.Sprite):
     def get_keys(self):
         self.rot_speed = 0
         self.vel = vec(0, 0)
+        global level
         keys = pg.key.get_pressed()
         #establishing the key press and assigning it to a rotation of the player (ex. if left arrow key is pushed rotate the player left)
         if keys[pg.K_LEFT] or keys[pg.K_a]:
@@ -145,9 +152,19 @@ class Car(pg.sprite.Sprite):
         if keys[pg.K_RIGHT] or keys[pg.K_d]:
             self.rot_speed = -CAR_ROT_SPEED
         if keys[pg.K_UP] or keys[pg.K_w]:
-            self.vel = vec(CAR_SPEED, 0).rotate(-self.rot)
+            if level == 1:
+                self.vel = vec(CAR_SPEED, 0).rotate(-self.rot)
+            elif level == 2:
+                self.vel = vec(CAR_SPEED2, 0).rotate(-self.rot)
+            elif level == 3:
+                self.vel = vec(CAR_SPEED2, 0).rotate(-self.rot)
         if keys[pg.K_DOWN] or keys[pg.K_s]:
-            self.vel = vec(-CAR_SPEED / 2, 0).rotate(-self.rot)
+            if level == 1:
+                self.vel = vec(-CAR_SPEED / 2, 0).rotate(-self.rot)
+            elif level == 2:
+                self.vel = vec(-CAR_SPEED2 / 2, 0).rotate(-self.rot)
+            elif level == 3:
+                self.vel = vec(-CAR_SPEED2 / 2, 0).rotate(-self.rot)
         if keys[pg.K_SPACE]:
             #assiging variabel now to make sure bullets dont loop endlessly
             now = pg.time.get_ticks()
@@ -196,7 +213,15 @@ class Mob(pg.sprite.Sprite):
         self.rot = 0
         #calling the mobs health and speed varibale set in settings
         self.health = MOB_HEALTH
-        self.speed = MOB_SPEEDS
+        global level
+        if level == 1:
+            self.speed = MOB_SPEEDS
+        elif level == 2:
+            self.speed = MOB_SPEEDS2
+        elif level == 3:
+            self.speed = MOB_SPEEDS2
+
+
 
     def avoid_mobs(self):
         #using a tutorial we inserted this code to make sure the mobs dont all overlap each other while chasing the car and make the movemnt more realistic
@@ -393,7 +418,7 @@ class Camera:
 
 
 #########################################################################################
-
+level = 3
 class Game:
 
     def __init__(self):
@@ -436,10 +461,14 @@ class Game:
         self.title_font2 = path.join(img_folder, 'COMICATE.TTF')
         self.map = TiledMap(path.join(self.map_folder, 'level1.tmx'))
         self.map2 = TiledMap(path.join(self.map_folder, 'level2.tmx'))
+        self.map3 = TiledMap(path.join(self.map_folder, 'level3.tmx'))
         self.hud_font = path.join(img_folder,'JosefinSans-Bold.TTF')
         self.dim_screen = pg.Surface(self.screen.get_size()).convert_alpha()
         self.dim_screen.fill((0,0,0,180))
         self.car_img = pg.image.load(path.join(img_folder, CAR_IMG)).convert_alpha()
+        self.minimap_img = pg.image.load(path.join(img_folder, MINIMAP_IMG)).convert_alpha()
+        self.minimap_img2 = pg.image.load(path.join(img_folder, MINIMAP_IMG2)).convert_alpha()
+        self.minimap_img3 = pg.image.load(path.join(img_folder, MINIMAP_IMG3)).convert_alpha()
         self.mob_img = pg.image.load(path.join(img_folder, MOB_IMG)).convert_alpha()
         self.wall_img = pg.image.load(path.join(img_folder, WALL_IMG)).convert_alpha()
         self.bullet_img = pg.image.load(path.join(img_folder, BULLET_IMG)).convert_alpha()
@@ -465,7 +494,7 @@ class Game:
         self.mobs = pg.sprite.Group()
         self.bullets = pg.sprite.Group()
         self.items = pg.sprite.Group()
-        level = 1
+        global level
         #import the levels from application 'Tiled'
         if level == 1:
             self.map_img = self.map.make_map()
@@ -476,7 +505,7 @@ class Game:
                     self.car = Car(self, obj_center.x, obj_center.y)
                 if tile_object.name == 'wall':
                     Obstacle(self, tile_object.x, tile_object.y, tile_object.width, tile_object.height)
-                if tile_object.name in ['destination', 'pass1', 'pass2', 'pass3', 'pass4']:
+                if tile_object.name in ['destination', 'pass1', 'pass2']:
                     Item(self, obj_center, tile_object.name)
                 if tile_object.name == 'mob':
                     Mob(self, obj_center.x, obj_center.y)
@@ -495,13 +524,28 @@ class Game:
                 if tile_object.name == 'mob':
                     Mob(self, obj_center.x, obj_center.y)
             self.camera = Camera(self.map2.width, self.map2.height)
+        elif level == 3:
+            self.map3_img = self.map3.make_map()
+            self.map3.rect = self.map3_img.get_rect()
+            for tile_object in self.map3.tmxdata.objects:
+                obj_center = vec(tile_object.x + tile_object.width / 2, tile_object.y + tile_object.height / 2)
+                if tile_object.name == 'player':
+                    self.car = Car(self, obj_center.x, obj_center.y)
+                if tile_object.name == 'wall':
+                    Obstacle(self, tile_object.x, tile_object.y, tile_object.width, tile_object.height)
+                if tile_object.name in ['destination', 'pass1', 'pass2', 'pass3', 'pass4', 'pass5', 'pass6']:
+                    Item(self, obj_center, tile_object.name)
+                if tile_object.name == 'mob':
+                    Mob(self, obj_center.x, obj_center.y)
+            self.camera = Camera(self.map3.width, self.map3.height)
 
 
         # setting variables as False to be triggered to True when a certain button is pressed
-        self.paused = False
+        self.minimap = False
         self.night = False
         self.pickup = False
         self.over = False
+
 
 
 
@@ -513,7 +557,7 @@ class Game:
             #FPS rate at which the game is running
             self.dt = self.clock.tick(FPS) / 1000.0  # fix for Python 2.x
             self.events()
-            if not self.paused:
+            if not self.minimap:
                 self.update()
             self.draw()
 
@@ -579,17 +623,20 @@ class Game:
         #sets the game caption to 'Tuber'
         pg.display.set_caption("Tuber")
         # self.screen.fill(BGCOLOR)
-        level = 1
+        global level
         if level == 1:
             self.screen.blit(self.map_img, self.camera.apply(self.map))
         elif level == 2:
             self.screen.blit(self.map2_img, self.camera.apply(self.map2))
+        elif level == 3:
+            self.screen.blit(self.map3_img, self.camera.apply(self.map3))
         # self.draw_grid()
         for sprite in self.all_sprites:
             if isinstance(sprite, Mob):
                 #draws zombie health to screen above mobs
                 sprite.draw_health()
             self.screen.blit(sprite.image, self.camera.apply(sprite))
+
         # draws player health to top left of screen
         draw_car_health(self.screen, 10, 10, self.car.health / CAR_HEALTH)
         #if statment to engage the night time mode
@@ -597,10 +644,18 @@ class Game:
             self.render_fog()
         # draws the passengers left text to the top right of the screen
         self.draw_text('Passengers left: {}'.format(len(self.items) -1 ), self.hud_font, 30, WHITE, WIDTH -10, 10, align='ne')
-        if self.paused:
+        self.draw_text('Level {}'.format(level), self.hud_font, 50, WHITE, WIDTH / 2, HEIGHT * 1/14,align='center')
+
+        if self.minimap:
             #is game is pause using "p" key then it dims the background and draws "Paused" to the center of the screen
             self.screen.blit(self.dim_screen, (0, 0))
-            self.draw_text("Paused", self.title_font, 105, CYAN, WIDTH / 2, HEIGHT / 2, align='center')
+            self.draw_text("Level {} Minimap".format(level), self.title_font, 75, WHITE, WIDTH / 2, HEIGHT * 1/8, align='center')
+            if level == 1:
+                self.screen.blit(self.minimap_img, (0, 140))
+            elif level == 2:
+                self.screen.blit(self.minimap_img2, (7, 140))
+            elif level == 3:
+                self.screen.blit(self.minimap_img3, (0, 140))
         pg.display.flip()
 
 
@@ -612,15 +667,16 @@ class Game:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
                     self.quit()
-                if event.key == pg.K_p:
-                    #when p is pressed it triggered the paused function
-                    self.paused  = not self.paused
                 if event.key == pg.K_m:
+                    #when p is pressed it triggered the paused function
+                    self.minimap  = not self.minimap
+                if event.key == pg.K_b:
                     #when m is pressed the pickup function is triggered
                     self.pickup = True
                 if event.key == pg.K_n:
                     #when n is pressed the night function is triggered
                     self.night = not self.night
+
 
     def show_start_screen(self):
         self.screen.fill(LIGHTGREY)
@@ -630,23 +686,39 @@ class Game:
         self.draw_text('Press a key to start level 1', self.title_font, 50, WHITE, WIDTH / 2, HEIGHT / 2,
                        align='center')
         self.draw_text('Controls:', self.title_font, 50, YELLOW, WIDTH / 2, HEIGHT * 4 / 5, align='center')
-        self.draw_text('Arrow Keys = Move     M = Pickup/Drop-off      P = Pause      N = Night mode', self.title_font, 25, YELLOW, WIDTH / 2, HEIGHT * 3.5 / 4, align='center')
+        self.draw_text('Arrow Keys = Move    B = Pickup/Drop-off      M = Minimap      N = Night mode', self.title_font, 25, YELLOW, WIDTH / 2, HEIGHT * 3.5 / 4, align='center')
         pg.display.flip()
         'call wait for key function'
         self.wait_for_key()
 
 
     def show_go_screen(self):
+        global level
         if not self.over:
-            # game over or level over screen
-            self.screen.fill(BLACK)
-            # draws 'level over' text to the center of the screen
-            self.draw_text('LEVEL COMPLETE!', self.title_font, 100, CYAN, WIDTH / 2, HEIGHT / 2, align='center')
-            # draws 'press a key to start next level' to the center of the screen just below the 'Level over" (* 3/4)
-            self.draw_text('Press a key to start next level', self.title_font, 50, WHITE, WIDTH / 2, HEIGHT * 3 / 4, align ='center')
-            pg.display.flip()
-            'call wait for key function'
-            self.wait_for_key()
+            if level == 3:
+                # game over or level over screen
+                self.screen.fill(LIGHTGREY)
+                # draws 'level over' text to the center of the screen
+                self.draw_text('GAME COMPLETE!', self.title_font, 100, YELLOW, WIDTH / 2, HEIGHT / 2, align='center')
+                # draws 'press a key to start next level' to the center of the screen just below the 'Level over" (* 3/4)
+                self.draw_text('Congratulations press a key to restart level', self.title_font, 40, WHITE, WIDTH / 2, HEIGHT * 3 / 4,
+                               align='center')
+                pg.display.flip()
+                'call wait for key function'
+                self.wait_for_key()
+            else:
+                self.screen.fill(BLACK)
+                # draws 'level over' text to the center of the screen
+                self.draw_text('LEVEL COMPLETE!', self.title_font, 100, CYAN, WIDTH / 2, HEIGHT *  1/ 4, align='center')
+                # draws 'press a key to start next level' to the center of the screen just below the 'Level over" (* 3/4)
+                self.draw_text('Press a key to start level {}'.format(level + 1), self.title_font, 55, WHITE, WIDTH / 2, HEIGHT * 1.5 / 4, align ='center')
+                if level ==1:
+                    self.draw_text('LEVEL 2:', self.title_font, 60, WHITE, WIDTH / 40 ,HEIGHT * 3.2 / 4, align='w')
+                    self.draw_text('++10 Zombies  ++Zombie Health  ++Zombie Speed', self.title_font, 40, RED, WIDTH / 2, HEIGHT * 3.5 / 4, align='center')
+                    self.draw_text('++2 Passengers ++Car speed', self.title_font, 40, GREEN, WIDTH / 2, HEIGHT * 3.8 / 4, align='center')
+                pg.display.flip()
+                'call wait for key function'
+                self.wait_for_key2()
         else:
             # game over or level over screen
             self.screen.fill(BLACK)
@@ -674,6 +746,23 @@ class Game:
                 #uses key up instad of key down to give the player time to press down the key to start the next level
                 if event.type == pg.KEYUP:
                      waiting = False
+
+    def wait_for_key2(self):
+        # wait function so the next level doesnt start automatically
+        pg.event.wait()
+        waiting = True
+        global level
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                # if the player quits after the level
+                if event.type == pg.QUIT:
+                    waiting = False
+                    self.quit
+                # uses key up instad of key down to give the player time to press down the key to start the next level
+                if event.type == pg.KEYUP:
+                    waiting = False
+                    level += 1
 
 g = Game()
 g.show_start_screen()
