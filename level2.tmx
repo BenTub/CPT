@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.5.0" orientation="orthogonal" renderorder="right-down" width="50" height="30" tilewidth="64" tileheight="64" infinite="0" nextlayerid="4" nextobjectid="55">
+<map version="1.5" tiledversion="1.5.0" orientation="orthogonal" renderorder="right-down" width="50" height="30" tilewidth="64" tileheight="64" infinite="0" nextlayerid="4" nextobjectid="71">
  <tileset firstgid="1" source="../img/sand.tsx"/>
  <tileset firstgid="2" source="../img/roads2.tsx"/>
  <tileset firstgid="542" source="../img/dirt.tsx"/>
@@ -79,44 +79,41 @@
 </data>
  </layer>
  <objectgroup id="2" name="Object Layer 1">
-  <object id="1" name="player" x="67.78" y="171.778" width="240" height="114.667"/>
-  <object id="2" name="mob" x="400.89" y="1338.44" width="62.222" height="57.111"/>
+  <object id="1" name="player" x="137.477" y="165.717" width="240" height="114.667"/>
   <object id="3" name="wall" x="0" y="-4" width="2814" height="64"/>
   <object id="8" name="wall" x="964" y="321" width="120" height="510"/>
   <object id="13" name="wall" x="957" y="1025" width="1922" height="510"/>
-  <object id="14" name="wall" x="6" y="318" width="762" height="62"/>
-  <object id="16" name="wall" x="708" y="316" width="62" height="576"/>
-  <object id="18" name="wall" x="-86" y="380" width="474" height="514"/>
-  <object id="20" name="wall" x="574" y="368" width="192" height="528"/>
-  <object id="21" name="wall" x="352" y="372" width="278" height="394"/>
-  <object id="23" name="wall" x="10" y="1088" width="374" height="636"/>
-  <object id="25" name="wall" x="578" y="1094" width="188" height="630"/>
+  <object id="18" name="wall" x="-4.18182" y="325.455" width="392.182" height="568.545"/>
+  <object id="20" name="wall" x="574" y="322.545" width="192" height="573.455"/>
+  <object id="21" name="wall" x="352" y="323.515" width="278" height="442.485"/>
+  <object id="23" name="wall" x="3.93939" y="1088" width="374" height="826.909"/>
+  <object id="25" name="wall" x="574.97" y="1084.91" width="191.03" height="817.879"/>
   <object id="26" name="wall" x="362" y="1468" width="246" height="134"/>
   <object id="28" name="wall" x="706" y="1726" width="2426" height="64"/>
   <object id="29" name="wall" x="3068" y="-2" width="70" height="1770"/>
   <object id="30" name="wall" x="2688" y="322" width="190" height="502"/>
   <object id="32" name="wall" x="1286" y="318" width="502" height="514"/>
   <object id="33" name="wall" x="1980" y="316" width="514" height="518"/>
-  <object id="34" name="mob" x="82.889" y="961.445" width="62.222" height="57.111"/>
-  <object id="35" name="mob" x="410.889" y="1181.44" width="62.222" height="57.111"/>
-  <object id="36" name="mob" x="510.889" y="1177.44" width="62.222" height="57.111"/>
-  <object id="37" name="pass1" x="496.889" y="193.44" width="62.222" height="57.111"/>
-  <object id="38" name="pass2" x="674.89" y="191.445" width="62.222" height="57.111"/>
+  <object id="37" name="pass1" x="444.465" y="1381.02" width="62.222" height="57.111"/>
+  <object id="38" name="pass2" x="1864.89" y="893.445" width="62.222" height="57.111"/>
   <object id="39" name="mob" x="1990.89" y="913.444" width="62.222" height="57.111"/>
   <object id="40" name="mob" x="1758.89" y="899.444" width="62.222" height="57.111"/>
-  <object id="41" name="mob" x="1846.89" y="775.444" width="62.222" height="57.111"/>
-  <object id="42" name="mob" x="1760.89" y="957.444" width="62.222" height="57.111"/>
   <object id="43" name="mob" x="2082.89" y="949.444" width="62.222" height="57.111"/>
-  <object id="44" name="mob" x="2132.89" y="1615.44" width="62.222" height="57.111"/>
-  <object id="45" name="pass4" x="1020.89" y="187.44" width="62.222" height="57.111"/>
-  <object id="46" name="mob" x="1874.89" y="1651.44" width="62.222" height="57.111"/>
-  <object id="47" name="mob" x="1956.89" y="1657.44" width="62.222" height="57.111"/>
+  <object id="44" name="mob" x="2157.13" y="1612.41" width="62.222" height="57.111"/>
+  <object id="45" name="pass4" x="1774.89" y="1581.44" width="62.222" height="57.111"/>
+  <object id="46" name="mob" x="1890.04" y="1618.11" width="62.222" height="57.111"/>
+  <object id="47" name="mob" x="1990.22" y="1563.5" width="62.222" height="57.111"/>
   <object id="48" name="mob" x="2074.89" y="1659.44" width="62.222" height="57.111"/>
-  <object id="49" name="pass3" x="836.89" y="189.44" width="62.222" height="57.111"/>
+  <object id="49" name="pass3" x="2876.89" y="1559.44" width="62.222" height="57.111"/>
   <object id="50" name="mob" x="2812.89" y="1649.44" width="62.222" height="57.111"/>
   <object id="51" name="mob" x="2728.89" y="1565.44" width="62.222" height="57.111"/>
-  <object id="52" name="mob" x="2726.89" y="1661.44" width="62.222" height="57.111"/>
-  <object id="53" name="mob" x="2950.89" y="1519.44" width="62.222" height="57.111"/>
-  <object id="54" name="destination" x="1152.89" y="191.445" width="62.222" height="57.111"/>
+  <object id="53" name="mob" x="2953.92" y="1631.56" width="62.222" height="57.111"/>
+  <object id="54" name="destination" x="2938.77" y="123.263" width="62.222" height="57.111"/>
+  <object id="59" name="mob" x="1644.65" y="880.535" width="62.222" height="57.111"/>
+  <object id="62" name="wall" x="6.06061" y="3.0303" width="6.06061" height="393.939"/>
+  <object id="66" x="2772.73" y="3.0303" width="427.273" height="18.1818"/>
+  <object id="68" name="mob" x="459.798" y="965.384" width="62.222" height="57.111"/>
+  <object id="69" name="mob" x="414.344" y="1168.41" width="62.222" height="57.111"/>
+  <object id="70" name="mob" x="320.404" y="977.505" width="62.222" height="57.111"/>
  </objectgroup>
 </map>
